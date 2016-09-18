@@ -1,0 +1,31 @@
+manual
+stop on stopping <%= app %>
+
+kill timeout 300
+
+env APP='<%= app%>'
+
+# List all project jobs. If job is running then reload, otherwise run it.
+script
+  initctl list -v | egrep "^$APP-[^ ]+[0-9]+" | while read line; do
+
+    # dash interpretator doesn't support arrays, so we have to use the following tricks
+    set -- $line
+    job=$1
+    status=$2
+
+    if echo $status | egrep -q ^stop/; then
+      echo "start $job"
+      start $job || true
+    elif echo $status | egrep -q ^start/; then
+      if cat /etc/init/$job.conf | egrep -q "reload signal"; then
+        echo "reload $job"
+        reload $job || true
+      else
+        echo "restart $job"
+        restart $job || true
+      fi
+    fi
+
+  done
+end script

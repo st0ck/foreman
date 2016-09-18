@@ -1,0 +1,52 @@
+# Unicorn script config
+start on starting <%= app %>-<%= name %>
+stop on stopping <%= app %>-<%= name %>
+respawn
+
+reload signal USR2
+
+env PORT=<%= port %>
+<% engine.env.each do |name,value| -%>
+env <%= name.upcase %>='<%= value.gsub(/'/, "'\"'\"'") %>'
+<% end -%>
+
+<%
+  project_path = engine.root.to_s.split("/")[0..-3].join("/")
+  current_path = File.join(project_path, "current")
+%>
+env UNICORN_PID_PATH='<%= File.join(project_path, "shared/tmp/pids/unicorn.pid") %>'
+
+setuid <%= user %>
+
+chdir <%= project_path %>
+
+script
+  # Trap any USR2 and send them to the Unicorn master process
+  trap 'kill -s USR2 $(cat "$UNICORN_PID_PATH")' USR2
+
+  cd <%= current_path %> && <%= process.command %> & UNICORN_PID=$!
+
+  while true; do
+    echo "UNICORN_PID = $UNICORN_PID"
+    cd <%= current_path %>
+
+    while true; do
+      sleep 1
+      if [ ! -e /proc/$UNICORN_PID ]; then
+        break 1
+      fi
+    done
+
+    if [ -f "$UNICORN_PID_PATH" ]; then
+      UNICORN_PID=$(cat "$UNICORN_PID_PATH")
+    fi
+
+    if [ ! -z "$UNICORN_PID" ] && [ -e /proc/$UNICORN_PID ]; then
+      echo "unicorn process exists"
+      continue
+    fi
+    echo "breaking"
+    break
+  done
+  echo "exit"
+end script
