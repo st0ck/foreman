@@ -1,0 +1,18 @@
+# Clockwork script config
+start on starting <%= app %>-<%= name %>
+stop on stopping <%= app %>-<%= name %>
+
+respawn
+
+kill signal HUP
+
+env PORT=<%= port %>
+<% engine.env.each do |name,value| -%>
+env <%= name.upcase %>='<%= value.gsub(/'/, "'\"'\"'") %>'
+<% end -%>
+
+setuid <%= user %>
+
+chdir <%= engine.root %>
+
+exec <%= process.command %>

@@ -52,6 +52,7 @@ class Foreman::Export::CustomUpstart < Foreman::Export::Base
       case process.command
       when /exec\s+unicorn/ then :unicorn
       when /rake\s+resque/ then :resque
+      when /clockwork/ then :clockwork
       else :process
       end
     "custom_upstart/#{name}.conf.erb"
