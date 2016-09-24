@@ -14,6 +14,7 @@ script
     job=$1
     status=$2
 
+    echo "job: $job, status: $status"
     if echo $status | egrep -q ^stop/; then
       echo "start $job"
       start $job || true
@@ -22,8 +23,10 @@ script
         echo "reload $job"
         reload $job || true
       else
-        echo "restart $job"
-        restart $job || true
+        echo "stop $job"
+        stop $job || true
+        echo "start $job"
+        start $job || true
       fi
     fi
 
